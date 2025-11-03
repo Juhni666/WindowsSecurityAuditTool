@@ -1,0 +1,32 @@
+# Build outputs
+release/
+*.zip
+
+# Test results
+TestResults/
+
+# PowerShell module files
+*.nupkg
+
+# Windows shortcuts
+*.lnk
+
+# User-specific files
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+
+# VS Code settings
+.vscode/
+
+# Audit output folders
+SecurityAudit_*/
+
+# Local configuration
+local.config.json
+
+# Temporary files
+*.tmp
+*.temp
+~$*
