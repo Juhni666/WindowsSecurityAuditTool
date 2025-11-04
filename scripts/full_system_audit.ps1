@@ -557,7 +557,7 @@ Safe-Run {
             }
         }} -Descending | ForEach-Object {
             $pts = $_.Points
-            "  [$($_.Severity)] $($_.Category) - $($_.Description) ($pts pts)" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+            "  [{0}] {1} - {2} ({3} pts)" -f $_.Severity, $_.Category, $_.Description, $pts | Out-File -FilePath $reportPath -Append -Encoding UTF8
         }
     } else {
         "Security Risk Findings:" | Out-File -FilePath $reportPath -Append -Encoding UTF8
@@ -599,12 +599,12 @@ Safe-Run {
     if ($riskFindings.Count -gt 0) {
         $totalRiskPoints = ($riskFindings | Measure-Object -Property Points -Sum).Sum
         $riskCount = $riskFindings.Count
-        "  Configuration Risks: $totalRiskPoints pts ($riskCount findings)" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+        "  Configuration Risks: {0} pts ({1} findings)" -f $totalRiskPoints, $riskCount | Out-File -FilePath $reportPath -Append -Encoding UTF8
     }
     if ($hits.Count -gt 0) {
         $ratPoints = 100 - $baseScore - $(if ($riskFindings.Count -gt 0) { ($riskFindings | Measure-Object -Property Points -Sum).Sum } else { 0 })
         $hitsCount = $hits.Count
-        "  Malware Indicators: -$ratPoints pts ($hitsCount findings)" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+        "  Malware Indicators: -{0} pts ({1} findings)" -f $ratPoints, $hitsCount | Out-File -FilePath $reportPath -Append -Encoding UTF8
     }
 
     "" | Out-File -FilePath $reportPath -Append -Encoding UTF8
