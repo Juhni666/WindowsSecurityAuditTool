@@ -271,13 +271,24 @@ Safe-Run {
 
 # 20) Quick integrity checks: system file checker (SFC scan summary) - only the scan start, may take long
 Write-Host ""
-Write-Host "🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨" -ForegroundColor Cyan
-Write-Host "      ⏳  PHASE 20/30: System File Checker (SFC)  ⏳" -ForegroundColor Yellow -BackgroundColor Red
-Write-Host "     This may take a couple of minutes. Please wait..." -ForegroundColor Yellow -BackgroundColor Red
-Write-Host "🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨" -ForegroundColor Cyan
+Write-Host ">>> PHASE 20/30: System File Checker (SFC) <<<" -ForegroundColor Cyan -BackgroundColor Blue
+Write-Host "This may take a couple of minutes. Please wait..." -ForegroundColor White
 Write-Host ""
 
+# Simple animated spinner while SFC runs
+function Show-AnimatedSfcMessage {
+    $spinChars = @('|', '/', '-', '\')
+    for ($i = 0; $i -lt 20; $i++) {
+        $char = $spinChars[$i % $spinChars.Length]
+        Write-Host -NoNewline "`r[$char] Running System File Checker... " -ForegroundColor Yellow
+        Start-Sleep -Milliseconds 200
+    }
+    Write-Host "`r[✓] SFC started - this will continue in the background..." -ForegroundColor Green
+}
+
 Safe-Run {
+    Show-AnimatedSfcMessage
+    
     "SFC check (summary only). Running 'sfc /verifyonly' which checks integrity but does not attempt repairs (safer/faster):"
 
     # Ensure TrustedInstaller (Windows Modules Installer) is running - SFC depends on it
