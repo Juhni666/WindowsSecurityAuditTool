@@ -372,18 +372,33 @@ Safe-Run {
                 if ($second.ExitCode -ne 0) {
                     "SFC retry finished with exit code $($second.ExitCode). As a last-resort attempt, running 'sfc /scannow' to perform repairs (this may take a long time)."
                     ""
-                    "=== SFC /SCANNOW LIVE OUTPUT (progress will update below) ==="
+                    "=== SFC /SCANNOW LIVE OUTPUT (this process may take 15-45 minutes) ==="
                     ""
                     try {
-                        # Run sfc /scannow and stream output to console while also capturing
-                        # We need to write to host directly to bypass Safe-Run's capture
-                        $sfcOutput = & sfc /scannow 2>&1 | ForEach-Object { 
-                            Write-Host $_  # Display to console immediately
-                            $_             # Also capture for file
+                        # Start SFC process and show spinner to indicate it's running
+                        $process = Start-Process -FilePath "sfc" -ArgumentList "/scannow" -PassThru -WindowStyle Hidden -RedirectStandardOutput $null -RedirectStandardError $null
+                        
+                        # Spinner animation for progress indication
+                        $spinChars = @("|", "/", "-", "\")
+                        $spinIndex = 0
+                        $timestamp = Get-Date
+                        
+                        while (-not $process.HasExited) {
+                            $elapsed = (Get-Date) - $timestamp
+                            $status = "$($spinChars[$spinIndex]) SFC /scannow running... [$([int]$elapsed.TotalSeconds)s elapsed]"
+                            Write-Host -NoNewline "`r$status"
+                            $spinIndex = ($spinIndex + 1) % $spinChars.Count
+                            Start-Sleep -Milliseconds 500
                         }
-                        ""
-                        "=== SFC /SCANNOW COMPLETED ==="
-                        $sfcOutput  # Output captured content to file
+                        Write-Host "`r$(' ' * 70)"  # Clear the spinner line
+                        Write-Host "SFC /scannow completed (Exit code: $($process.ExitCode))"
+                        
+                        # Read SFC output from CBS.log for reporting
+                        if (Test-Path "C:\Windows\Logs\CBS\CBS.log") {
+                            "SFC scan results (from CBS.log):"
+                            $cbs = Get-Content "C:\Windows\Logs\CBS\CBS.log" -Tail 100 -ErrorAction SilentlyContinue
+                            $cbs | Where-Object { $_ -match "Verification|repair|corrupt" } | ForEach-Object { $_ }
+                        }
                     } catch {
                         "sfc /scannow failed to run or returned an error: $_"
                     }
