@@ -1,5 +1,7 @@
-# Build outputs
-release/
+# Build outputs - track release configs but not ZIPs
+release/*.zip
+
+# All ZIP files
 *.zip
 
 # Test results
