@@ -271,10 +271,10 @@ Safe-Run {
 
 # 20) Quick integrity checks: system file checker (SFC scan summary) - only the scan start, may take long
 Write-Host ""
-Write-Host "⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿" -ForegroundColor Cyan
+Write-Host "🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨" -ForegroundColor Cyan
 Write-Host "      ⏳  PHASE 20/30: System File Checker (SFC)  ⏳" -ForegroundColor Yellow -BackgroundColor Red
 Write-Host "     This may take a couple of minutes. Please wait..." -ForegroundColor Yellow -BackgroundColor Red
-Write-Host "⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿" -ForegroundColor Cyan
+Write-Host "🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨" -ForegroundColor Cyan
 Write-Host ""
 
 Safe-Run {
