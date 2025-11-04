@@ -15,7 +15,7 @@ $releaseDir = Join-Path $repoRoot 'release'
 if (-not (Test-Path $releaseDir)) { New-Item -Path $releaseDir -ItemType Directory | Out-Null }
 
 $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-$version = "0.1.0-$timestamp"
+$version = "0.1.1-$timestamp"
 $zipName = "WindowsSecurityAudit_$timestamp.zip"
 $zipPath = Join-Path $releaseDir $zipName
 
