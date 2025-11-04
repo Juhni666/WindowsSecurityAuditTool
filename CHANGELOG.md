@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [0.2.2] - 2025-11-04
+### Added
+- Version number display in script header and HTML report title
+- Live SFC /scannow progress output to console using Write-Host
+
+### Changed
+- SFC /scannow now displays real-time progress to user while also capturing output
+
+### Fixed
+- SFC /scannow appearing stuck with no visible progress indicator
+- RDP false positive detection (pattern now requires fDenyTSConnections=0)
+- Visual progress bars filtered from SFC output files
+- Emoji encoding issues in HTML reports (changed to HTML entities)
+
 ## [0.2.0] - 2025-11-04
 ### Added
 - Comprehensive test suite for visual validation of risk analysis

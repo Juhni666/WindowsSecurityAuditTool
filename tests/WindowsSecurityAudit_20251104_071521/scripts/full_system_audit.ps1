@@ -1,13 +1,11 @@
 # ...existing code...
 <#
-Windows Full Security Audit v0.2.2
+Windows Full Security Audit
 - Run in an elevated PowerShell session (Run as Administrator).
 - Usage:
     powershell -ExecutionPolicy Bypass -File "C:\security-check\full_system_audit.ps1"
 - Output: folder on Desktop named SecurityAudit_YYYYMMDD_HHmmss and a zip file.
 #>
-
-$script:AuditVersion = "0.2.2"
 
 # Check elevation
 if (-not ([bool]([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -42,7 +40,7 @@ function Safe-Run {
     }
 }
 
-Write-Output "Starting security audit v$script:AuditVersion: $timestamp"
+Write-Output "Starting security audit: $timestamp"
 "Output folder: $outBase" | Out-File (Join-Path $outBase "summary.txt") -Encoding UTF8
 
 # 1) Basic system info
@@ -371,19 +369,14 @@ Safe-Run {
 
                 if ($second.ExitCode -ne 0) {
                     "SFC retry finished with exit code $($second.ExitCode). As a last-resort attempt, running 'sfc /scannow' to perform repairs (this may take a long time)."
-                    ""
-                    "=== SFC /SCANNOW LIVE OUTPUT (progress will update below) ==="
-                    ""
                     try {
-                        # Run sfc /scannow and stream output to console while also capturing
-                        # We need to write to host directly to bypass Safe-Run's capture
-                        $sfcOutput = & sfc /scannow 2>&1 | ForEach-Object { 
-                            Write-Host $_  # Display to console immediately
-                            $_             # Also capture for file
-                        }
-                        ""
-                        "=== SFC /SCANNOW COMPLETED ==="
-                        $sfcOutput  # Output captured content to file
+                        $fullSfcLog = Join-Path $outBase '20_sfc_scannow_full.txt'
+                        Write-Progress -Activity 'Windows Security Audit' -Status 'Running: sfc /scannow (this may take many minutes)' -PercentComplete 0
+                        # Use cmd.exe wrapper to redirect sfc output to file (compatible with PowerShell 5.1)
+                        $cmdArgs = "/c sfc /scannow > `"$fullSfcLog`" 2>&1"
+                        Start-Process -FilePath $env:COMSPEC -ArgumentList $cmdArgs -NoNewWindow -Wait
+                        Write-Progress -Activity 'Windows Security Audit' -Status 'Completed: sfc /scannow' -PercentComplete 100
+                        "sfc /scannow output (full) written to: $fullSfcLog"
                     } catch {
                         "sfc /scannow failed to run or returned an error: $_"
                     }
@@ -690,11 +683,6 @@ try {
                 # Clean up any remaining weird characters
                 $line = $line -replace '[^\x20-\x7E\r\n]', ''
                 
-                # Skip visual progress bars like: [==     3.8%     ]
-                if ($line -match '^\[=*\s+\d+\.?\d*%\s+\]') {
-                    continue
-                }
-                
                 if ($line -match 'Verification\s*(\d+)%\s*complete') {
                     $percent = [int]$matches[1]
                     $inProgress = $true
@@ -883,8 +871,8 @@ try {
   </style>
 </head>
 <body>
-    <h1>Windows Security Audit Report</h1>
-    <p><strong>Version:</strong> $script:AuditVersion | <strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</p>
+    <h1>Security Audit - Quick Report</h1>
+    <p>Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</p>
 
     $bannerHtml
 

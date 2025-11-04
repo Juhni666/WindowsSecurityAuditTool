@@ -1,0 +1,12 @@
+﻿Windows Security Audit Tool
+=========================
+
+Quick Start:
+1. Right-click on 'install.ps1' and select "Run with PowerShell"
+2. Click "Yes" when asked for administrator permissions
+3. The tool will install and create a desktop shortcut
+4. Use the shortcut to run security audits
+
+For full documentation, see docs/usage.md
+
+Note: All scripts are signed and require administrator privileges to run.
