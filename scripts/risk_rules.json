@@ -66,7 +66,7 @@
       "checks": [
         {
           "name": "RDP Enabled",
-          "pattern": "RDP enabled",
+          "pattern": "RDP enabled.*fDenyTSConnections=0",
           "severity": "Medium",
           "points": -2,
           "description": "Remote Desktop is enabled (potential attack vector)"

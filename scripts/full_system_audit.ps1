@@ -832,7 +832,7 @@ try {
             }
             $riskHtml += "</table>"
         } else {
-            $riskHtml = "<p style='color:#28a745'>✓ No configuration risks detected</p>"
+            $riskHtml = "<p style=""color:#28a745"">&#10003; No configuration risks detected</p>"
         }
         
         # Build RAT/malware findings HTML
@@ -848,7 +848,7 @@ try {
             }
             $hitsHtml += "</table>"
         } else {
-            $hitsHtml = "<p style='color:#28a745'>✓ No malware indicators detected</p>"
+            $hitsHtml = "<p style=""color:#28a745"">&#10003; No malware indicators detected</p>"
         }
 
         $filesList = Get-ChildItem -Path $outBase -Filter '*.txt' -File | Sort-Object Name | ForEach-Object { "<li><a href='$($_.Name)'>$($_.Name)</a></li>" } | Out-String
