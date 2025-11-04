@@ -270,6 +270,12 @@ Safe-Run {
 } (Join-Path $outBase "19_network.txt")
 
 # 20) Quick integrity checks: system file checker (SFC scan summary) - only the scan start, may take long
+Write-Host ""
+Write-Host "==============================================="
+Write-Host "Phase 20/30: System File Checker (SFC) - This may take 10-30+ minutes. Please wait..."
+Write-Host "==============================================="
+Write-Host ""
+
 Safe-Run {
     "SFC check (summary only). Running 'sfc /verifyonly' which checks integrity but does not attempt repairs (safer/faster):"
 
@@ -370,35 +376,11 @@ Safe-Run {
             $second.Raw | ForEach-Object { $_ }
 
                 if ($second.ExitCode -ne 0) {
-                    "SFC retry finished with exit code $($second.ExitCode). As a last-resort attempt, running 'sfc /scannow' to perform repairs (this may take a long time)."
-                    ""
-                    "=== SFC /SCANNOW LIVE OUTPUT (this process may take 15-45 minutes) ==="
+                    "SFC retry finished with exit code $($second.ExitCode). As a last-resort attempt, running 'sfc /scannow' to perform repairs."
                     ""
                     try {
-                        # Start SFC process and show spinner to indicate it's running
-                        $process = Start-Process -FilePath "sfc" -ArgumentList "/scannow" -PassThru -WindowStyle Hidden -RedirectStandardOutput $null -RedirectStandardError $null
-                        
-                        # Spinner animation for progress indication
-                        $spinChars = @("|", "/", "-", "\")
-                        $spinIndex = 0
-                        $timestamp = Get-Date
-                        
-                        while (-not $process.HasExited) {
-                            $elapsed = (Get-Date) - $timestamp
-                            $status = "$($spinChars[$spinIndex]) SFC /scannow running... [$([int]$elapsed.TotalSeconds)s elapsed]"
-                            Write-Host -NoNewline "`r$status"
-                            $spinIndex = ($spinIndex + 1) % $spinChars.Count
-                            Start-Sleep -Milliseconds 500
-                        }
-                        Write-Host "`r$(' ' * 70)"  # Clear the spinner line
-                        Write-Host "SFC /scannow completed (Exit code: $($process.ExitCode))"
-                        
-                        # Read SFC output from CBS.log for reporting
-                        if (Test-Path "C:\Windows\Logs\CBS\CBS.log") {
-                            "SFC scan results (from CBS.log):"
-                            $cbs = Get-Content "C:\Windows\Logs\CBS\CBS.log" -Tail 100 -ErrorAction SilentlyContinue
-                            $cbs | Where-Object { $_ -match "Verification|repair|corrupt" } | ForEach-Object { $_ }
-                        }
+                        & sfc /scannow 2>&1
+                        "sfc /scannow scan completed."
                     } catch {
                         "sfc /scannow failed to run or returned an error: $_"
                     }
