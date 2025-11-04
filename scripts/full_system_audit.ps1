@@ -409,6 +409,7 @@ Safe-Run {
     $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
     $indFile = Join-Path $scriptRoot 'indicators.json'
     $cfgFile = Join-Path $scriptRoot 'audit_config.json'
+    $riskFile = Join-Path $scriptRoot 'risk_rules.json'
 
     # Load indicator config (fallback to inline defaults)
     $indicatorCfg = @{ indicators = @('njrat','darkcomet','remcos','radmin','quasar','cobalt','metasploit','psexec','rat','remoteadmin','anydesk','teamviewer'); allowlist = @('TeamViewer','AnyDesk'); highSeverity = @('njrat','darkcomet','remcos') }
@@ -420,6 +421,12 @@ Safe-Run {
     $auditCfg = @{ AutoRemediate = $true; RunScannowIfVerifyFails = $true; OpenHtmlReport = $true }
     if (Test-Path $cfgFile) {
         try { $auditCfg = Get-Content -Path $cfgFile -Raw | ConvertFrom-Json } catch { "Failed to read audit_config.json: $_" | Out-File -FilePath $reportPath -Append -Encoding UTF8 }
+    }
+
+    # Load risk analysis rules
+    $riskCfg = $null
+    if (Test-Path $riskFile) {
+        try { $riskCfg = Get-Content -Path $riskFile -Raw | ConvertFrom-Json } catch { "Failed to read risk_rules.json: $_" | Out-File -FilePath $reportPath -Append -Encoding UTF8 }
     }
 
     function Read-ReportFile($name) { $p = Join-Path $outBase $name; if (Test-Path $p) { Get-Content -Path $p -ErrorAction SilentlyContinue } else { @() } }
@@ -444,8 +451,37 @@ Safe-Run {
 
     "" | Out-File -FilePath $reportPath -Append -Encoding UTF8
 
+    # === COMPREHENSIVE RISK ANALYSIS ===
+    "=== SECURITY RISK ANALYSIS ===" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    "" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    
+    $riskFindings = @()
+    $baseScore = 100
+    
+    # Perform risk analysis if risk rules are loaded
+    if ($riskCfg -and $riskCfg.riskRules) {
+        foreach ($rule in $riskCfg.riskRules) {
+            $fileContent = Read-ReportFile $rule.file
+            if ($fileContent.Count -eq 0) { continue }
+            
+            $fileText = $fileContent -join "`n"
+            foreach ($check in $rule.checks) {
+                if ($fileText -match $check.pattern) {
+                    $riskFindings += [PSCustomObject]@{
+                        Category = $rule.category
+                        Name = $check.name
+                        Severity = $check.severity
+                        Points = $check.points
+                        Description = $check.description
+                    }
+                    $baseScore += $check.points  # Points are negative
+                }
+            }
+        }
+    }
+
     # RAT detection - structured
-    "RAT / suspicious indicators (best-effort):" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    "Malware / RAT Indicators:" | Out-File -FilePath $reportPath -Append -Encoding UTF8
     $searchFiles = @('06_listening_ports.txt','14_autoruns.txt','07_services.txt','13_scheduled_tasks.txt','15_installed_software.txt')
     $hits = @()
     foreach ($f in $searchFiles) {
@@ -472,30 +508,84 @@ Safe-Run {
     }
 
     if ($hits.Count -gt 0) {
-        # compute a simple score: start at 100, subtract 30 per High, 10 per Medium hit, 5 per Low hit; allowlisted reduces confidence slightly
-        $score = 100
+        # Compute RAT score deductions
         foreach ($h in $hits) {
             switch ($h.Severity) {
-                'High' { $score -= 30 }
-                'Medium' { $score -= 10 }
-                default { $score -= 5 }
+                'High' { $baseScore -= 30 }
+                'Medium' { $baseScore -= 10 }
+                default { $baseScore -= 5 }
             }
-            if ($h.Allowlisted) { $score -= 5 }
+            if ($h.Allowlisted) { $baseScore -= 2 }
         }
-        if ($score -lt 0) { $score = 0 }
-        "Score: $score / 100" | Out-File -FilePath $reportPath -Append -Encoding UTF8
-        $category = if ($score -ge 90) { 'No problems' } elseif ($score -ge 60) { 'Some issues detected' } else { 'Severe problems' }
-        "Summary: $category" | Out-File -FilePath $reportPath -Append -Encoding UTF8
-        "" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+        
         $hits | Sort-Object -Property @{Expression={if ($_.Severity -eq 'High') {3} elseif ($_.Severity -eq 'Medium') {2} else {1}}},Indicator -Descending | ForEach-Object {
-            $msg = "[$($_.Severity)] $($_.Indicator) in $($_.File): $($_.Line)"
+            $msg = "  [RAT-$($_.Severity)] $($_.Indicator) in $($_.File): $($_.Line)"
             if ($_.Allowlisted) { $msg = "$msg (allowlisted)" }
             $msg | Out-File -FilePath $reportPath -Append -Encoding UTF8
         }
     } else {
-        "Score: 100 / 100" | Out-File -FilePath $reportPath -Append -Encoding UTF8
-        "Summary: No problems" | Out-File -FilePath $reportPath -Append -Encoding UTF8
-        "No obvious RAT indicator keywords found in checked outputs." | Out-File -FilePath $reportPath -Append -Encoding UTF8
+        "  No malware indicators detected" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    }
+    
+    "" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    
+    # Display risk findings
+    if ($riskFindings.Count -gt 0) {
+        "Security Risk Findings:" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+        $riskFindings | Sort-Object -Property @{Expression={
+            switch ($_.Severity) {
+                'Critical' {4}
+                'High' {3}
+                'Medium' {2}
+                default {1}
+            }
+        }} -Descending | ForEach-Object {
+            "  [$($_.Severity)] $($_.Category) - $($_.Description) ($($_.Points) points)" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+        }
+    } else {
+        "Security Risk Findings:" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+        "  No configuration risks detected" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    }
+    
+    "" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    
+    # Final score calculation
+    if ($baseScore -lt 0) { $baseScore = 0 }
+    "Overall Security Score: $baseScore / 100" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    
+    # Determine category
+    $category = 'Unknown'
+    $categoryColor = '#ccc'
+    if ($riskCfg -and $riskCfg.scoreCategories) {
+        foreach ($cat in $riskCfg.scoreCategories.PSObject.Properties) {
+            $range = $cat.Value
+            if ($baseScore -ge $range.min -and $baseScore -le $range.max) {
+                $category = $range.label
+                $categoryColor = $range.color
+                break
+            }
+        }
+    } else {
+        # Fallback categories
+        $category = if ($baseScore -ge 90) { 'Excellent' } 
+                    elseif ($baseScore -ge 75) { 'Good' }
+                    elseif ($baseScore -ge 60) { 'Fair' } 
+                    elseif ($baseScore -ge 40) { 'Poor' }
+                    else { 'Critical' }
+    }
+    
+    "Security Rating: $category" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    "" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    
+    "Risk Breakdown:" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    "  Base Score: 100" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    if ($riskFindings.Count -gt 0) {
+        $totalRiskPoints = ($riskFindings | Measure-Object -Property Points -Sum).Sum
+        "  Configuration Risks: $totalRiskPoints points ($($riskFindings.Count) findings)" | Out-File -FilePath $reportPath -Append -Encoding UTF8
+    }
+    if ($hits.Count -gt 0) {
+        $ratPoints = 100 - $baseScore - $(if ($riskFindings.Count -gt 0) { ($riskFindings | Measure-Object -Property Points -Sum).Sum } else { 0 })
+        "  Malware Indicators: -$ratPoints points ($($hits.Count) findings)" | Out-File -FilePath $reportPath -Append -Encoding UTF8
     }
 
     "" | Out-File -FilePath $reportPath -Append -Encoding UTF8
@@ -619,6 +709,40 @@ try {
         # Process the SFC output to clean up progress spam and fix character spacing
         $sfctext = Process-SfcOutput($sfctext)
 
+        # Load risk rules for HTML report
+        $riskCfg = $null
+        $riskFile = Join-Path $scriptRoot 'risk_rules.json'
+        if (Test-Path $riskFile) {
+            try { $riskCfg = Get-Content -Path $riskFile -Raw | ConvertFrom-Json } catch { }
+        }
+
+        # Perform comprehensive risk analysis
+        $riskFindings = @()
+        $baseScore = 100
+        
+        if ($riskCfg -and $riskCfg.riskRules) {
+            foreach ($rule in $riskCfg.riskRules) {
+                $p = Join-Path $outBase $rule.file
+                if (-not (Test-Path $p)) { continue }
+                $fileContent = Get-Content -Path $p -ErrorAction SilentlyContinue
+                if ($fileContent.Count -eq 0) { continue }
+                
+                $fileText = $fileContent -join "`n"
+                foreach ($check in $rule.checks) {
+                    if ($fileText -match $check.pattern) {
+                        $riskFindings += [PSCustomObject]@{
+                            Category = $rule.category
+                            Name = $check.name
+                            Severity = $check.severity
+                            Points = $check.points
+                            Description = $check.description
+                        }
+                        $baseScore += $check.points
+                    }
+                }
+            }
+        }
+        
         # Perform RAT scan again to include structured hits in HTML
         $hits = @()
         if ($indicatorCfg) {
@@ -650,20 +774,73 @@ try {
         # HTML encode helper
         function HtmlEncode([string]$s) { if ($null -eq $s) { return '' } ; return ($s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;' -replace "'","&#39;") }
 
-        $hitsHtml = ''
-        # compute score and category for HTML summary
-        $score = 100
+        # Compute score for HTML - combines risk findings and RAT findings
         foreach ($h in $hits) {
-            if ($h.Severity -eq 'High') { $score -= 30 } elseif ($h.Severity -eq 'Medium') { $score -= 10 } else { $score -= 5 }
-            if ($h.Allowlisted) { $score -= 5 }
+            if ($h.Severity -eq 'High') { $baseScore -= 30 } elseif ($h.Severity -eq 'Medium') { $baseScore -= 10 } else { $baseScore -= 5 }
+            if ($h.Allowlisted) { $baseScore -= 2 }
         }
-        if ($score -lt 0) { $score = 0 }
-        $category = if ($score -ge 90) { 'No problems' } elseif ($score -ge 60) { 'Some issues detected' } else { 'Severe problems' }
-        $bannerColor = if ($category -eq 'No problems') { '#e6ffed' } elseif ($category -eq 'Some issues detected') { '#fff8e1' } else { '#ffeef0' }
-    $bannerHtml = "<div style='padding:12px;border-radius:6px;background:$bannerColor;margin-bottom:12px'><strong>Overall score: $score/100</strong> - <em>$category</em></div>"
+        if ($baseScore -lt 0) { $baseScore = 0 }
+        
+        # Determine category and color
+        $category = 'Unknown'
+        $bannerColor = '#ccc'
+        if ($riskCfg -and $riskCfg.scoreCategories) {
+            foreach ($cat in $riskCfg.scoreCategories.PSObject.Properties) {
+                $range = $cat.Value
+                if ($baseScore -ge $range.min -and $baseScore -le $range.max) {
+                    $category = $range.label
+                    $bannerColor = $range.color
+                    break
+                }
+            }
+        } else {
+            # Fallback categories
+            $category = if ($baseScore -ge 90) { 'Excellent' } 
+                        elseif ($baseScore -ge 75) { 'Good' }
+                        elseif ($baseScore -ge 60) { 'Fair' } 
+                        elseif ($baseScore -ge 40) { 'Poor' }
+                        else { 'Critical' }
+            $bannerColor = if ($baseScore -ge 90) { '#d4edda' } 
+                          elseif ($baseScore -ge 75) { '#d1ecf1' }
+                          elseif ($baseScore -ge 60) { '#fff3cd' } 
+                          elseif ($baseScore -ge 40) { '#f8d7da' }
+                          else { '#f5c6cb' }
+        }
+        
+    $bannerHtml = "<div style='padding:12px;border-radius:6px;background:$bannerColor;margin-bottom:12px'><strong>Security Score: $baseScore/100</strong> - <em>$category</em></div>"
+
+        # Build risk findings HTML
+        $riskHtml = ''
+        if ($riskFindings.Count -gt 0) {
+            $riskHtml = "<h3>Configuration Risks ($($riskFindings.Count) findings)</h3>"
+            $riskHtml += "<table border='1' cellpadding='6' cellspacing='0'><tr><th>Severity</th><th>Category</th><th>Issue</th><th>Impact</th></tr>"
+            foreach ($r in $riskFindings | Sort-Object -Property @{Expression={
+                switch ($_.Severity) {
+                    'Critical' {4}
+                    'High' {3}
+                    'Medium' {2}
+                    default {1}
+                }
+            }} -Descending) {
+                $color = switch ($r.Severity) {
+                    'Critical' { '#f5c6cb' }
+                    'High' { '#fdd' }
+                    'Medium' { '#fff4e5' }
+                    default { '#efe' }
+                }
+                $riskHtml += "<tr style='background:$color'><td>$([System.Web.HttpUtility]::HtmlEncode($r.Severity))</td><td>$([System.Web.HttpUtility]::HtmlEncode($r.Category))</td><td>$([System.Web.HttpUtility]::HtmlEncode($r.Name))</td><td>$([System.Web.HttpUtility]::HtmlEncode($r.Description)) ($($r.Points) points)</td></tr>"
+            }
+            $riskHtml += "</table>"
+        } else {
+            $riskHtml = "<p style='color:#28a745'>✓ No configuration risks detected</p>"
+        }
+        
+        # Build RAT/malware findings HTML
+        $hitsHtml = ''
 
         if ($hits.Count -gt 0) {
-            $hitsHtml = "<table border='1' cellpadding='6' cellspacing='0'><tr><th>Severity</th><th>Indicator</th><th>File</th><th>Line (excerpt)</th><th>Allowlisted</th></tr>"
+            $hitsHtml = "<h3>Malware / RAT Indicators ($($hits.Count) findings)</h3>"
+            $hitsHtml += "<table border='1' cellpadding='6' cellspacing='0'><tr><th>Severity</th><th>Indicator</th><th>File</th><th>Line (excerpt)</th><th>Allowlisted</th></tr>"
             foreach ($h in $hits | Sort-Object Severity -Descending) {
                 $color = if ($h.Severity -eq 'High') { '#fdd' } elseif ($h.Severity -eq 'Medium') { '#fff4e5' } else { '#efe' }
                 $allow = if ($h.Allowlisted) { 'Yes' } else { 'No' }
@@ -671,7 +848,7 @@ try {
             }
             $hitsHtml += "</table>"
         } else {
-            $hitsHtml = "<p>No obvious RAT indicator keywords found in the checked outputs.</p>"
+            $hitsHtml = "<p style='color:#28a745'>✓ No malware indicators detected</p>"
         }
 
         $filesList = Get-ChildItem -Path $outBase -Filter '*.txt' -File | Sort-Object Name | ForEach-Object { "<li><a href='$($_.Name)'>$($_.Name)</a></li>" } | Out-String
@@ -705,7 +882,11 @@ try {
 
   <div class='panel'><h2>SFC / DISM status</h2><pre>$([System.Web.HttpUtility]::HtmlEncode($sfctext))</pre></div>
 
-  <div class='panel'><h2>RAT / Suspicious indicators</h2>$hitsHtml</div>
+  <div class='panel'><h2>Security Risk Analysis</h2>
+    $riskHtml
+    <hr style='margin:20px 0'>
+    $hitsHtml
+  </div>
 
   <div class='panel'><h2>All output files</h2><ul>$filesList</ul></div>
 
