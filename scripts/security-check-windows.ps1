@@ -112,12 +112,12 @@ Get-NetUDPEndpoint | Select-Object LocalAddress,LocalPort,OwningProcess | Out-Fi
 
 # Map PIDs to processes
 Get-NetTCPConnection -State Listen | ForEach-Object {
-    $pid = $_.OwningProcess
-    $proc = (Get-Process -Id $pid -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path)
+    $procId = $_.OwningProcess
+    $proc = (Get-Process -Id $procId -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path)
     [PSCustomObject]@{
         LocalAddress = $_.LocalAddress
         LocalPort = $_.LocalPort
-        ProcessId = $pid
+        ProcessId = $procId
         ProcessName = $proc.ProcessName
         ProcessPath = $proc.Path
     }
