@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## [0.2.0] - 2025-11-04
+### Added
+- Comprehensive test suite for visual validation of risk analysis
+  - `create_test_report_with_risks.ps1` generates mock audit data with security issues
+  - `generate_test_html_report.ps1` creates test HTML reports
+  - `TEST_SCRIPTS_README.md` with usage instructions
+- Enhanced HTML report header with system identification
+  - Computer name, manufacturer/model, domain display
+  - Report generation timestamp
+  - Compact 2-column grid layout for system information
+- System info display: OS, User, CPU, RAM, Last Boot, Cores
+
+### Changed
+- **BREAKING**: Rebalanced security scoring system for more realistic assessments
+  - Critical issues: -7 to -10 points (previously -20 to -30)
+  - High issues: -5 to -8 points (previously -12 to -20)
+  - Medium issues: -2 to -5 points (previously -5 to -10)
+  - RAT indicators: High -10, Medium -4, Low -2 (previously -30, -10, -5)
+  - Systems with severe issues now score 20-40 instead of bottoming at 0
+- Updated risk_rules.json with balanced point values across all 10 categories
+- Improved HTML report background (slightly darker #e8e8e8 for better contrast)
+
+### Fixed
+- Removed emoji characters causing encoding issues in HTML reports
+- Better visual differentiation between security score categories
+
 ## [0.1.1] - 2025-11-04
 ### Fixed
 - SFC output formatting in HTML reports (removed verbose progress spam)
