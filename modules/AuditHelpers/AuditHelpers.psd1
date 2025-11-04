@@ -1,5 +1,5 @@
 @{
-    ModuleVersion = '1.0.0'
+    ModuleVersion = '0.2.5'
     GUID = 'd3b5e1c4-7f9e-4c5e-8c3e-1c3d5e1f4b5a'
     Author = 'Your Name'
     CompanyName = 'Your Company'
