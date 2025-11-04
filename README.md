@@ -23,17 +23,28 @@ This project provides a comprehensive security audit solution for Windows system
 - **Network Configuration**: Displays IP configuration, routing table, and ARP table.
 - **Integrity Checks**: Performs a system file checker (SFC) scan summary.
 
-## Getting Started
+## Quick Start
 
-1. **Prerequisites**: Ensure you have PowerShell running with administrative privileges.
-2. **Execution Policy**: Set the execution policy to allow script execution:
+### Option 1: Easy Installation (Recommended)
+1. Download and extract the release ZIP
+2. Open PowerShell as Administrator in the extracted folder
+3. Run the installer:
    ```powershell
-   Set-ExecutionPolicy Bypass -Scope Process
+   powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
    ```
-3. **Run the Audit**: Execute the main audit script:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File "C:\path\to\full_system_audit.ps1"
-   ```
+4. Use the desktop shortcut created to run audits
+
+### Option 2: Manual Execution
+Run the audit script directly:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\full_system_audit.ps1
+```
+
+## Requirements
+
+- Windows 10 or Windows 11
+- PowerShell 5.1 or later
+- Administrator privileges
 
 ## Documentation
 
