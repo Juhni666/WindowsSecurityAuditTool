@@ -8,21 +8,21 @@
           "name": "Defender Disabled",
           "pattern": "AntivirusEnabled\\s*:\\s*False",
           "severity": "Critical",
-          "points": -25,
+          "points": -8,
           "description": "Windows Defender antivirus is disabled"
         },
         {
           "name": "Real-Time Protection Off",
           "pattern": "RealTimeProtectionEnabled\\s*:\\s*False",
           "severity": "High",
-          "points": -15,
+          "points": -5,
           "description": "Real-time protection is turned off"
         },
         {
           "name": "No Antivirus",
           "pattern": "No antivirus|not available",
           "severity": "Critical",
-          "points": -30,
+          "points": -10,
           "description": "No antivirus software detected"
         }
       ]
@@ -35,14 +35,14 @@
           "name": "Firewall Disabled",
           "pattern": "Enabled\\s*:\\s*False",
           "severity": "Critical",
-          "points": -20,
+          "points": -7,
           "description": "Windows Firewall is disabled"
         },
         {
           "name": "Inbound Allow All",
           "pattern": "DefaultInboundAction\\s*:\\s*Allow",
           "severity": "High",
-          "points": -15,
+          "points": -5,
           "description": "Firewall allows all inbound connections by default"
         }
       ]
@@ -55,7 +55,7 @@
           "name": "No Recent Updates",
           "pattern": "^\\s*$",
           "severity": "Medium",
-          "points": -10,
+          "points": -3,
           "description": "No Windows updates found or updates outdated"
         }
       ]
@@ -68,14 +68,14 @@
           "name": "RDP Enabled",
           "pattern": "RDP enabled",
           "severity": "Medium",
-          "points": -8,
+          "points": -2,
           "description": "Remote Desktop is enabled (potential attack vector)"
         },
         {
           "name": "NLA Disabled",
           "pattern": "UserAuthentication\\s*:\\s*0",
           "severity": "High",
-          "points": -12,
+          "points": -5,
           "description": "Network Level Authentication is disabled for RDP"
         }
       ]
@@ -88,14 +88,14 @@
           "name": "SMBv1 Enabled",
           "pattern": "EnableSMB1Protocol\\s*:\\s*True",
           "severity": "High",
-          "points": -15,
+          "points": -5,
           "description": "Insecure SMBv1 protocol is enabled"
         },
         {
           "name": "Unencrypted SMB",
           "pattern": "EncryptData\\s*:\\s*False",
           "severity": "Medium",
-          "points": -8,
+          "points": -3,
           "description": "SMB encryption is not enabled"
         }
       ]
@@ -108,7 +108,7 @@
           "name": "Disk Not Encrypted",
           "pattern": "VolumeStatus\\s*:\\s*FullyDecrypted",
           "severity": "Medium",
-          "points": -10,
+          "points": -3,
           "description": "System drive is not encrypted with BitLocker"
         }
       ]
@@ -121,14 +121,14 @@
           "name": "Weak Password Length",
           "pattern": "Minimum password length\\s*:\\s*[0-7]",
           "severity": "High",
-          "points": -12,
+          "points": -5,
           "description": "Minimum password length is too short (less than 8 characters)"
         },
         {
           "name": "No Password Expiry",
           "pattern": "Maximum password age.*Unlimited",
           "severity": "Medium",
-          "points": -8,
+          "points": -3,
           "description": "Passwords never expire"
         }
       ]
@@ -141,14 +141,14 @@
           "name": "Guest Account Enabled",
           "pattern": "Guest.*Enabled\\s*:\\s*True",
           "severity": "High",
-          "points": -15,
+          "points": -5,
           "description": "Guest account is enabled"
         },
         {
           "name": "Password Never Expires",
           "pattern": "PasswordExpires\\s*:\\s*Never",
           "severity": "Medium",
-          "points": -5,
+          "points": -2,
           "description": "User account has password that never expires"
         }
       ]
@@ -161,7 +161,7 @@
           "name": "File Corruption Detected",
           "pattern": "found corrupt files|integrity violations",
           "severity": "High",
-          "points": -18,
+          "points": -6,
           "description": "System file corruption detected"
         }
       ]
@@ -174,7 +174,7 @@
           "name": "Critical Service Stopped",
           "pattern": "Windows Defender.*Stopped|Windows Update.*Stopped",
           "severity": "High",
-          "points": -12,
+          "points": -5,
           "description": "Critical security service is not running"
         }
       ]

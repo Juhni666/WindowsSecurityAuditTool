@@ -511,11 +511,11 @@ Safe-Run {
         # Compute RAT score deductions
         foreach ($h in $hits) {
             switch ($h.Severity) {
-                'High' { $baseScore -= 30 }
-                'Medium' { $baseScore -= 10 }
-                default { $baseScore -= 5 }
+                'High' { $baseScore -= 10 }
+                'Medium' { $baseScore -= 4 }
+                default { $baseScore -= 2 }
             }
-            if ($h.Allowlisted) { $baseScore -= 2 }
+            if ($h.Allowlisted) { $baseScore -= 1 }
         }
         
         $hits | Sort-Object -Property @{Expression={if ($_.Severity -eq 'High') {3} elseif ($_.Severity -eq 'Medium') {2} else {1}}},Indicator -Descending | ForEach-Object {
@@ -776,8 +776,8 @@ try {
 
         # Compute score for HTML - combines risk findings and RAT findings
         foreach ($h in $hits) {
-            if ($h.Severity -eq 'High') { $baseScore -= 30 } elseif ($h.Severity -eq 'Medium') { $baseScore -= 10 } else { $baseScore -= 5 }
-            if ($h.Allowlisted) { $baseScore -= 2 }
+            if ($h.Severity -eq 'High') { $baseScore -= 10 } elseif ($h.Severity -eq 'Medium') { $baseScore -= 4 } else { $baseScore -= 2 }
+            if ($h.Allowlisted) { $baseScore -= 1 }
         }
         if ($baseScore -lt 0) { $baseScore = 0 }
         
